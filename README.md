@@ -5,7 +5,7 @@ continuous agentic modernization.
 
 ## Session recording and slides
 
-[![Watch the Microsoft Reactor session on YouTube](https://img.youtube.com/vi/MHWQaoabVkc/hqdefault.jpg)](https://www.youtube.com/watch?v=MHWQaoabVkc)
+[![Watch the Microsoft Reactor session on YouTube](https://img.youtube.com/vi/MHWQaoabVkc/maxresdefault.jpg)](https://www.youtube.com/watch?v=MHWQaoabVkc)
 
 **[Watch the session on YouTube](https://www.youtube.com/watch?v=MHWQaoabVkc)**
 
