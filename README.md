@@ -1,14 +1,14 @@
 # Spring Boot Todo Webapp
 
-A sample todo web application using **Spring Boot 2.7.18**, **Java 8**,
+A sample todo web application using **Spring Boot 4.1.1**, **Java 25**,
 **Spring MVC**, **Thymeleaf**, and **Spring Data JPA / Hibernate** with an
 embedded **H2** database. It renders HTML on the server without a JavaScript
 framework.
 
 ## Requirements
 
-- JDK 8 (or a newer JDK capable of compiling Java 8 source)
-- Maven 3.6.3 or newer
+- JDK 25 (or a newer compatible JDK)
+- Maven 3.9 or newer
 
 ## Copilot cloud agent environment
 
@@ -70,7 +70,7 @@ afterward.
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs
 `mvn --batch-mode --no-transfer-progress verify` on pushes and pull requests
-to `main`. It uses Temurin 8 on Ubuntu, caches Maven dependencies, and builds
+to `main`. It uses Temurin 25 on Ubuntu, caches Maven dependencies, and builds
 the executable JAR while running all tests. It can also be started manually
 from the repository's Actions tab. No deployment is configured.
 
@@ -153,7 +153,8 @@ disable the schedule if recurring runs are no longer needed.
 All state-changing routes use POST and successful changes redirect to the
 home page to avoid accidental resubmission on refresh.
 
-This intentionally uses the requested legacy stack. Spring Boot 2.x and Java 8
-are not recommended defaults for new production systems. This sample has no
-authentication or CSRF protection and is intended for local learning, not
-public deployment.
+This stack was upgraded from the originally requested legacy baseline
+(Spring Boot 2.x / Java 8) to Spring Boot 4.1.1 / Java 25, with javax.*
+namespaces migrated to jakarta.*, via the continuous modernization workflow.
+This sample has no authentication or CSRF protection and is intended for
+local learning, not public deployment.
