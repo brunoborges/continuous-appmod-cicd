@@ -1,6 +1,6 @@
 package com.example.todo;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,10 +103,10 @@ class TodoServiceTest {
     void returnsNotFoundForUnknownTasks() {
         assertThatThrownBy(() -> service.toggle(99))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
-                        exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.NOT_FOUND));
+                        exception -> assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
         assertThatThrownBy(() -> service.delete(99))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
-                        exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.NOT_FOUND));
+                        exception -> assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
     private String repeat(char character, int count) {
