@@ -91,7 +91,9 @@ Before enabling the workflow:
    for Copilot access, as described in the integration guide.
 2. Add the PAT as an Actions repository secret named **GH_TOKEN** under
    **Settings > Secrets and variables > Actions**. Do not commit the token.
-   The workflow fails explicitly if the secret is missing.
+   Also add **CONTINUOUS_APPMOD_GH_TOKEN**, a dedicated publishing PAT restricted
+   to this repository with **Contents** and **Workflows** read/write permissions.
+   The workflow fails explicitly if either secret is missing.
 3. Merge the workflow into `main` to enable scheduling and manual dispatch.
 4. Enable **Settings > Actions > General > Workflow permissions > Allow
    GitHub Actions to create and approve pull requests**. The workflow creates
@@ -100,9 +102,12 @@ Before enabling the workflow:
 Run it from **Actions > Continuous modernization > Run workflow**. The workflow
 installs the latest stable CLI and Temurin JDKs 8, 11, 17, 21, and 25, with
 Java 8 initially active and the other JDKs available as Maven toolchains.
-The PAT authenticates the modernization CLI; the workflow's built-in
-`GITHUB_TOKEN` uses `contents: write` to push result branches,
-`pull-requests: write` to open PRs, and `actions: write` to dispatch CI.
+`GH_TOKEN` authenticates the modernization CLI.
+`CONTINUOUS_APPMOD_GH_TOKEN` authenticates Git pushes using the GitHub CLI
+credential helper; checkout credentials are not persisted. This PAT is needed
+because `GITHUB_TOKEN` cannot push changes to workflow files such as `ci.yml`.
+The workflow's built-in `GITHUB_TOKEN` uses `pull-requests: write` to open PRs
+and `actions: write` to dispatch CI.
 Repository or organization policies must permit those operations.
 
 The workflow records the starting revision before invoking the CLI. It

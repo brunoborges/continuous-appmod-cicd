@@ -12,7 +12,7 @@ on:
     - cron: '0 2 * * *'
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   actions: write
 
@@ -34,9 +34,14 @@ jobs:
       - name: Check authentication prerequisite
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          PUSH_TOKEN: ${{ secrets.CONTINUOUS_APPMOD_GH_TOKEN }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "::error::Add a repository Actions secret named GH_TOKEN with a PAT authorized for GitHub Copilot."
+            exit 1
+          fi
+          if [ -z "$PUSH_TOKEN" ]; then
+            echo "::error::Add CONTINUOUS_APPMOD_GH_TOKEN with repository Contents and Workflows read/write permissions."
             exit 1
           fi
 
@@ -45,6 +50,7 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Record starting revision
         id: baseline
@@ -83,6 +89,7 @@ jobs:
         id: push_changes
         env:
           BASE_SHA: ${{ steps.baseline.outputs.sha }}
+          GH_TOKEN: ${{ secrets.CONTINUOUS_APPMOD_GH_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -101,6 +108,7 @@ jobs:
           BRANCH_NAME="modernize-upgrade-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           git switch -c "$BRANCH_NAME"
           git commit -m "chore: apply Modernize CLI upgrades"
+          gh auth setup-git
           git push origin "HEAD:refs/heads/$BRANCH_NAME"
           echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
