@@ -1,4 +1,21 @@
-# Spring Boot Todo Webapp
+# Continuous Agentic Modernization
+
+This repository contains the demo from the **Microsoft Reactor** session on
+continuous agentic modernization.
+
+## Session recording and slides
+
+[![Watch the Microsoft Reactor session on YouTube](https://img.youtube.com/vi/MHWQaoabVkc/hqdefault.jpg)](https://www.youtube.com/watch?v=MHWQaoabVkc)
+
+**[Watch the session on YouTube](https://www.youtube.com/watch?v=MHWQaoabVkc)**
+
+**[View the slides: Continuous Agentic Modernization (PDF)](Continuous%20Agentic%20Modernization%20%28with%20resources%29.pdf)**
+
+GitHub READMEs do not support embedded YouTube players or PDF viewers with
+slide controls. Click the video thumbnail to watch the recording, or open the
+PDF above to browse the slides in GitHub's PDF viewer.
+
+## Spring Boot Todo Webapp
 
 A sample todo web application using **Spring Boot 2.7.18**, **Java 8**,
 **Spring MVC**, **Thymeleaf**, and **Spring Data JPA / Hibernate** with an
