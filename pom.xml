@@ -13,9 +13,11 @@
     <artifactId>todo-webapp</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Todo Webapp</name>
-    <description>Java 8 todo sample with Spring MVC and Thymeleaf</description>
+    <description>Java 11 todo sample with Spring MVC and Thymeleaf</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>11</java.version>
+        <!-- CVE-2022-45868 (GHSA-22wj-vf5f-wrvj): pin h2 above the Spring Boot 2.7.18-managed 2.1.214 -->
+        <h2.version>2.2.220</h2.version>
     </properties>
     <dependencies>
         <dependency>
@@ -50,6 +52,33 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>toolchain</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <toolchains>
+                        <jdk>
+                            <version>11</version>
+                            <vendor>temurin</vendor>
+                        </jdk>
+                    </toolchains>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>11</release>
+                </configuration>
             </plugin>
         </plugins>
     </build>

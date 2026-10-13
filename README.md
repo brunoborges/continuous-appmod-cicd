@@ -1,13 +1,13 @@
 # Spring Boot Todo Webapp
 
-A sample todo web application using **Spring Boot 2.7.18**, **Java 8**,
+A sample todo web application using **Spring Boot 2.7.18**, **Java 11**,
 **Spring MVC**, **Thymeleaf**, and **Spring Data JPA / Hibernate** with an
 embedded **H2** database. It renders HTML on the server without a JavaScript
 framework.
 
 ## Requirements
 
-- JDK 8 (or a newer JDK capable of compiling Java 8 source)
+- JDK 11 (or a newer JDK capable of compiling Java 11 source)
 - Maven 3.6.3 or newer
 
 ## Copilot cloud agent environment
@@ -22,8 +22,10 @@ The setup verifies Maven's major version, every registered JDK's `java` and
 `actions/setup-java` registers all five JDKs in `~/.m2/toolchains.xml`, with
 vendor `temurin`, versions `8`, `11`, `17`, `21`, and `25`, and IDs such as
 `temurin_21`. Toolchain-aware Maven plugins can select these JDKs using the
-Maven Toolchains Plugin; installing them does not change this application's
-Java target or automatically enable toolchain selection in `pom.xml`.
+Maven Toolchains Plugin. `pom.xml` now configures the Maven Toolchains Plugin
+and `maven-compiler-plugin` (`release=11`) to compile and run tests on the
+JDK 11 toolchain, while Maven itself can keep running on any installed JDK
+(e.g. JDK 8) that can resolve the `temurin_11` toolchain entry.
 To run Maven itself on another installed JDK, set `JAVA_HOME` to that
 toolchain's `jdkHome` and prepend `$JAVA_HOME/bin` to `PATH`.
 
@@ -70,9 +72,11 @@ afterward.
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs
 `mvn --batch-mode --no-transfer-progress verify` on pushes and pull requests
-to `main`. It uses Temurin 8 on Ubuntu, caches Maven dependencies, and builds
-the executable JAR while running all tests. It can also be started manually
-from the repository's Actions tab. No deployment is configured.
+to `main`. It installs Temurin 11 (the toolchain target) and Temurin 8 (the
+Maven runtime JDK) on Ubuntu, caches Maven dependencies, and builds
+the executable JAR while running all tests via the JDK 11 Maven toolchain.
+It can also be started manually from the repository's Actions tab. No
+deployment is configured.
 
 ## Continuous modernization
 
@@ -130,9 +134,10 @@ into a local repository. Review artifacts before sharing them because they
 contain project details and source code.
 
 Review the result and validate the upgraded application before merging.
-The baseline build workflow uses Java 8; if an upgrade changes the required
-build JDK, verify that CI and the baseline documentation in the result pull
-request reflect that change. Installing multiple JDKs here does not itself change the
+The baseline build workflow now uses a Java 11 Maven toolchain (Maven still runs
+on JDK 8); if a further upgrade changes the required build JDK, verify that CI
+and the baseline documentation in the result pull request reflect that change.
+Installing multiple JDKs here does not itself change the
 application's Java target. CLI runs consume the token owner's Copilot usage;
 disable the schedule if recurring runs are no longer needed.
 
@@ -153,7 +158,7 @@ disable the schedule if recurring runs are no longer needed.
 All state-changing routes use POST and successful changes redirect to the
 home page to avoid accidental resubmission on refresh.
 
-This intentionally uses the requested legacy stack. Spring Boot 2.x and Java 8
-are not recommended defaults for new production systems. This sample has no
+This intentionally uses the requested legacy stack. Spring Boot 2.x
+is not a recommended default for new production systems. This sample has no
 authentication or CSRF protection and is intended for local learning, not
 public deployment.
