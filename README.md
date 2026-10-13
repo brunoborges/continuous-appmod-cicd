@@ -82,7 +82,8 @@ and on demand, following the
 [GitHub Actions integration guide](https://learn.microsoft.com/en-us/azure/developer/github-copilot-app-modernization/modernization-agent/cicd-integration?tabs=github-actions).
 Scheduled runs use the CLI's latest supported LTS defaults. Manual runs accept
 an `upgrade_target`, such as `Java 21`; `latest` uses the same defaults.
-Each run starts from the repository's default branch.
+Each run starts from the repository's default branch and passes `--source .`
+explicitly to modernize the checked-out application.
 
 Before enabling the workflow:
 

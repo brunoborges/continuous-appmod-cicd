@@ -67,9 +67,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ "$UPGRADE_TARGET" = "latest" ]; then
-            modernize upgrade --no-tty
+            modernize upgrade --source . --no-tty
           else
-            modernize upgrade "$UPGRADE_TARGET" --no-tty
+            modernize upgrade "$UPGRADE_TARGET" --source . --no-tty
           fi
 
       - name: Push changes to result branch
