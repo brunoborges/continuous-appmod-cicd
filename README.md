@@ -74,6 +74,48 @@ to `main`. It uses Temurin 8 on Ubuntu, caches Maven dependencies, and builds
 the executable JAR while running all tests. It can also be started manually
 from the repository's Actions tab. No deployment is configured.
 
+## Continuous modernization
+
+`.github/workflows/modernize.yml` runs Microsoft's
+[Modernize CLI](https://github.com/microsoft/modernize-cli) daily at **02:00 UTC**
+and on demand, following the
+[GitHub Actions integration guide](https://learn.microsoft.com/en-us/azure/developer/github-copilot-app-modernization/modernization-agent/cicd-integration?tabs=github-actions).
+Scheduled runs use the CLI's latest supported LTS defaults. Manual runs accept
+an `upgrade_target`, such as `Java 21`; `latest` uses the same defaults.
+Each run starts from the repository's default branch.
+
+Before enabling the workflow:
+
+1. Ensure the token owner has a GitHub Copilot subscription and a PAT authorized
+   for Copilot access, as described in the integration guide.
+2. Add the PAT as an Actions repository secret named **GH_TOKEN** under
+   **Settings > Secrets and variables > Actions**. Do not commit the token.
+   The workflow fails explicitly if the secret is missing.
+3. Merge the workflow into `main` to enable scheduling and manual dispatch.
+
+Run it from **Actions > Continuous modernization > Run workflow**. The workflow
+installs the latest stable CLI and Temurin JDKs 8, 11, 17, 21, and 25, with
+Java 8 initially active and the other JDKs available as Maven toolchains.
+The PAT authenticates the modernization CLI; the workflow's built-in
+`GITHUB_TOKEN` uses `contents: write` to push result branches.
+Repository or organization policies must permit that write access.
+
+When changes are produced, the workflow commits them to a unique
+`modernize-upgrade-<run-id>-<attempt>` branch. Changes to `.github/workflows`
+are excluded from that commit. No branch is pushed when there are no
+committable changes. The run summary links to the result branch and a
+pull-request creation page; it does not open or merge a pull request.
+CLI logs are uploaded even after failures, when available, and retained for
+seven days. Review logs before sharing them because they may contain project
+details.
+
+Review the result and validate the upgraded application before merging.
+The existing build workflow is fixed to Java 8; if an upgrade changes the
+required build JDK, update CI and the baseline documentation in the result
+pull request. Installing multiple JDKs here does not itself change the
+application's Java target. CLI runs consume the token owner's Copilot usage;
+disable the schedule if recurring runs are no longer needed.
+
 ## Structure
 
 - `TodoController`: MVC routes and form validation.

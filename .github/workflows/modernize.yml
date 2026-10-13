@@ -1,0 +1,124 @@
+name: Continuous modernization
+
+on:
+  workflow_dispatch:
+    inputs:
+      upgrade_target:
+        description: 'Upgrade target (e.g., Java 21); latest uses CLI defaults'
+        required: false
+        default: latest
+        type: string
+  schedule:
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: continuous-modernization
+  cancel-in-progress: false
+
+jobs:
+  modernization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      UPGRADE_TARGET: ${{ inputs.upgrade_target || 'latest' }}
+
+    steps:
+      - name: Check authentication prerequisite
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Add a repository Actions secret named GH_TOKEN with a PAT authorized for GitHub Copilot."
+            exit 1
+          fi
+
+      - name: Check out default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Install JDKs and configure Maven toolchains
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: |
+            11
+            17
+            21
+            25
+            8
+          overwrite-settings: false
+
+      - name: Download Modernize CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/microsoft/modernize-cli/main/scripts/install.sh \
+            -o "$RUNNER_TEMP/install-modernize.sh"
+          sh "$RUNNER_TEMP/install-modernize.sh"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run Modernize CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if [ "$UPGRADE_TARGET" = "latest" ]; then
+            modernize upgrade --no-tty
+          else
+            modernize upgrade "$UPGRADE_TARGET" --no-tty
+          fi
+
+      - name: Push changes to result branch
+        id: push_changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A -- . ':(exclude).github/workflows'
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BRANCH_NAME="modernize-upgrade-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$BRANCH_NAME"
+          git commit -m "chore: apply Modernize CLI upgrades"
+          git push origin "HEAD:refs/heads/$BRANCH_NAME"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Display results summary
+        env:
+          CHANGED: ${{ steps.push_changes.outputs.changed }}
+          RESULT_BRANCH: ${{ steps.push_changes.outputs.branch_name }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          {
+            echo "## Modernization results"
+            printf '\nTarget: %s\n' "$UPGRADE_TARGET"
+            if [ "$CHANGED" = "true" ]; then
+              printf '\nResult branch: %s\n' "$RESULT_BRANCH"
+              printf '\n[View branch](%s/%s/tree/%s)\n' \
+                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$RESULT_BRANCH"
+              printf '\n[Create pull request](%s/%s/compare/%s...%s)\n' \
+                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$BASE_BRANCH" "$RESULT_BRANCH"
+              echo
+              echo "Review the changes and run build/tests for the upgraded stack before merging."
+            else
+              echo
+              echo "No committable changes detected; no result branch was created."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Modernize CLI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: modernize-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ~/.modernize/logs/
+          if-no-files-found: warn
+          retention-days: 7
