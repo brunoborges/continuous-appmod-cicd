@@ -93,27 +93,41 @@ Before enabling the workflow:
    **Settings > Secrets and variables > Actions**. Do not commit the token.
    The workflow fails explicitly if the secret is missing.
 3. Merge the workflow into `main` to enable scheduling and manual dispatch.
+4. Enable **Settings > Actions > General > Workflow permissions > Allow
+   GitHub Actions to create and approve pull requests**. The workflow creates
+   PRs but does not approve or merge them.
 
 Run it from **Actions > Continuous modernization > Run workflow**. The workflow
 installs the latest stable CLI and Temurin JDKs 8, 11, 17, 21, and 25, with
 Java 8 initially active and the other JDKs available as Maven toolchains.
 The PAT authenticates the modernization CLI; the workflow's built-in
-`GITHUB_TOKEN` uses `contents: write` to push result branches.
-Repository or organization policies must permit that write access.
+`GITHUB_TOKEN` uses `contents: write` to push result branches,
+`pull-requests: write` to open PRs, and `actions: write` to dispatch CI.
+Repository or organization policies must permit those operations.
 
-When changes are produced, the workflow commits them to a unique
-`modernize-upgrade-<run-id>-<attempt>` branch. Changes to `.github/workflows`
-are excluded from that commit. No branch is pushed when there are no
-committable changes. The run summary links to the result branch and a
-pull-request creation page; it does not open or merge a pull request.
-CLI logs are uploaded even after failures, when available, and retained for
-seven days. Review logs before sharing them because they may contain project
-details.
+The workflow records the starting revision before invoking the CLI. It
+publishes the full net result, including changes already committed by the CLI
+and any remaining working-tree changes, as a single commit on a unique
+`modernize-upgrade-<run-id>-<attempt>` branch. Only `ci.yml` changes are retained
+under `.github/workflows`, allowing the build JDK to follow the upgrade while
+protecting the modernization and setup workflows. No branch or PR is created
+when there are no net changes relative to the starting revision.
+
+The workflow automatically opens a pull request and includes its link in the
+run summary. It explicitly dispatches the build workflow on the result branch
+because PRs created with `GITHUB_TOKEN` do not trigger `pull_request` workflows.
+It does not approve or merge the PR. If PR creation fails, the job fails and
+the summary links to the preserved branch for manual PR creation.
+CLI logs and a Git bundle containing local commits, including the original
+CLI commits, are uploaded even after failures, when available, and retained
+for seven days. Recover commits by cloning the bundle or fetching its refs
+into a local repository. Review artifacts before sharing them because they
+contain project details and source code.
 
 Review the result and validate the upgraded application before merging.
-The existing build workflow is fixed to Java 8; if an upgrade changes the
-required build JDK, update CI and the baseline documentation in the result
-pull request. Installing multiple JDKs here does not itself change the
+The baseline build workflow uses Java 8; if an upgrade changes the required
+build JDK, verify that CI and the baseline documentation in the result pull
+request reflect that change. Installing multiple JDKs here does not itself change the
 application's Java target. CLI runs consume the token owner's Copilot usage;
 disable the schedule if recurring runs are no longer needed.
 

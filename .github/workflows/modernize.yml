@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+  actions: write
 
 concurrency:
   group: continuous-modernization
@@ -42,6 +44,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Record starting revision
+        id: baseline
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install JDKs and configure Maven toolchains
         uses: actions/setup-java@v5
@@ -74,11 +81,18 @@ jobs:
 
       - name: Push changes to result branch
         id: push_changes
+        env:
+          BASE_SHA: ${{ steps.baseline.outputs.sha }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -A -- . ':(exclude).github/workflows'
+          # Retain CLI commits for the recovery bundle before squashing the result.
+          git branch "modernize-cli-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" HEAD
+          git add -A -- .
+          git reset --soft "$BASE_SHA"
+          git restore --source="$BASE_SHA" --staged --worktree -- \
+            .github/workflows ':(exclude).github/workflows/ci.yml'
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -91,11 +105,44 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
+      - name: Create modernization pull request
+        if: steps.push_changes.outputs.changed == 'true'
+        id: pull_request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT_BRANCH: ${{ steps.push_changes.outputs.branch_name }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          {
+            echo "## Modernization"
+            printf '\nRequested target: %s\n' "$UPGRADE_TARGET"
+            printf '\n[Workflow run](%s/%s/actions/runs/%s)\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            echo
+            echo "Includes the CLI's committed changes and any remaining working-tree changes."
+            echo "Only ci.yml changes are retained under .github/workflows."
+            echo "Review the diff, CLI reports, and build/test results before merging."
+          } > "$RUNNER_TEMP/modernize-pr-body.md"
+          PR_URL=$(gh pr create --repo "$GITHUB_REPOSITORY" \
+            --base "$BASE_BRANCH" --head "$RESULT_BRANCH" \
+            --title "chore: modernize application ($UPGRADE_TARGET)" \
+            --body-file "$RUNNER_TEMP/modernize-pr-body.md")
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Run build and tests on result branch
+        if: steps.push_changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT_BRANCH: ${{ steps.push_changes.outputs.branch_name }}
+        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$RESULT_BRANCH"
+
       - name: Display results summary
+        if: always() && steps.push_changes.outcome == 'success'
         env:
           CHANGED: ${{ steps.push_changes.outputs.changed }}
           RESULT_BRANCH: ${{ steps.push_changes.outputs.branch_name }}
           BASE_BRANCH: ${{ github.event.repository.default_branch }}
+          PR_URL: ${{ steps.pull_request.outputs.url }}
         run: |
           {
             echo "## Modernization results"
@@ -104,21 +151,33 @@ jobs:
               printf '\nResult branch: %s\n' "$RESULT_BRANCH"
               printf '\n[View branch](%s/%s/tree/%s)\n' \
                 "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$RESULT_BRANCH"
-              printf '\n[Create pull request](%s/%s/compare/%s...%s)\n' \
-                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$BASE_BRANCH" "$RESULT_BRANCH"
+              if [ -n "$PR_URL" ]; then
+                printf '\n[Pull request](%s)\n' "$PR_URL"
+              else
+                echo
+                echo "Pull request creation failed; the result branch is preserved."
+                printf '\n[Create pull request](%s/%s/compare/%s...%s)\n' \
+                  "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$BASE_BRANCH" "$RESULT_BRANCH"
+              fi
               echo
               echo "Review the changes and run build/tests for the upgraded stack before merging."
             else
               echo
-              echo "No committable changes detected; no result branch was created."
+              echo "No net changes relative to the starting revision; no result branch or PR was created."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Modernize CLI logs
+      - name: Preserve local commits
+        if: always() && steps.baseline.outcome == 'success'
+        run: git bundle create "$RUNNER_TEMP/modernize-result.bundle" --all
+
+      - name: Upload Modernize CLI logs and recovery bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: modernize-logs-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ~/.modernize/logs/
+          path: |
+            ~/.modernize/logs/
+            ${{ runner.temp }}/modernize-result.bundle
           if-no-files-found: warn
           retention-days: 7
