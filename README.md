@@ -32,28 +32,6 @@ Workflow changes are checked on pull requests and pushes to `main`; it can
 also be run manually from **Actions > Copilot Setup Steps** once merged.
 See [GitHub's environment customization guide](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment).
 
-### Java modernization skill
-
-Java upgrades use the **modernize-java** repository skill in
-`.github/skills/modernize-java/SKILL.md` together with Microsoft's modernization
-MCP server. Follow [GitHub's agent skills guide](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)
-and the MCP configuration in `.github/copilot-instructions.md`.
-The MCP server must be saved in repository settings by an administrator;
-checking in the skill does not configure the server.
-
-Once the skill is merged into `main`, use the general-purpose agent (or any
-skill-capable agent) and specify the requested versions and constraints, for example:
-`Upgrade to Java 17 while retaining Spring Boot 2.7.18`.
-Copilot loads the skill for Java modernization requests and runs it in the
-current session; no custom-agent selection or specialist delegation is required.
-The skill follows Microsoft's documented planning, confirmation, execution,
-and validation lifecycle, adapted to preserve the cloud-agent task branch,
-honor user constraints, and retain sanitized modernization evidence in the PR.
-It retains the session's agent and model. If the host has not discovered the
-skill yet, ask Copilot to read `.github/skills/modernize-java/SKILL.md` directly.
-The skill requires the configured MCP tools to be available; a redirect-tool
-success does not prove an upgrade was performed.
-
 ## Run
 
 ```sh
