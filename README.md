@@ -17,15 +17,15 @@ PDF above to browse the slides in GitHub's PDF viewer.
 
 ## Spring Boot Todo Webapp
 
-A sample todo web application using **Spring Boot 2.7.18**, **Java 8**,
+A sample todo web application using **Spring Boot 4.1.1**, **Java 25**,
 **Spring MVC**, **Thymeleaf**, and **Spring Data JPA / Hibernate** with an
 embedded **H2** database. It renders HTML on the server without a JavaScript
 framework.
 
 ## Requirements
 
-- JDK 8 (or a newer JDK capable of compiling Java 8 source)
-- Maven 3.6.3 or newer
+- JDK 17 or newer (Spring Boot 4.x minimum); this project targets JDK 25
+- Maven 3.9 or newer
 
 ## Copilot cloud agent environment
 
@@ -147,9 +147,10 @@ into a local repository. Review artifacts before sharing them because they
 contain project details and source code.
 
 Review the result and validate the upgraded application before merging.
-The baseline build workflow uses Java 8; if an upgrade changes the required
-build JDK, verify that CI and the baseline documentation in the result pull
-request reflect that change. Installing multiple JDKs here does not itself change the
+The build workflow now uses Java 25 (upgraded from the original Java 8
+baseline); if a further upgrade changes the required build JDK, verify that
+CI and the baseline documentation in the result pull request reflect that
+change. Installing multiple JDKs here does not itself change the
 application's Java target. CLI runs consume the token owner's Copilot usage;
 disable the schedule if recurring runs are no longer needed.
 
@@ -170,7 +171,7 @@ disable the schedule if recurring runs are no longer needed.
 All state-changing routes use POST and successful changes redirect to the
 home page to avoid accidental resubmission on refresh.
 
-This intentionally uses the requested legacy stack. Spring Boot 2.x and Java 8
-are not recommended defaults for new production systems. This sample has no
-authentication or CSRF protection and is intended for local learning, not
-public deployment.
+This application was upgraded from the originally requested legacy stack
+(Spring Boot 2.7.18 / Java 8) to **Spring Boot 4.1.1** / **Java 25** as part
+of a Java upgrade task. This sample has no authentication or CSRF protection
+and is intended for local learning, not public deployment.
